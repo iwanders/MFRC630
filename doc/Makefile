@@ -11,4 +11,4 @@ doxygen:
 	doxygen Doxygen.cfg
 
 clean:
-	rm -r $(SPHINX_OUTDIR) doxygen_output
+	rm -r breathe_output doxygen_output
