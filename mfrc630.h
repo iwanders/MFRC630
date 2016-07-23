@@ -132,7 +132,7 @@ void mfrc630_write_regs(uint8_t reg, const uint8_t* values, uint8_t len);
 /*!
   @brief Write data to FIFO.
   
-  The FIFO is located at register `MFRC630_REG_FIFODATA`. 
+  The FIFO is located at register `#MFRC630_REG_FIFODATA`. 
   Writes to this register do not automatically increment the write pointer in the chip and multiple bytes may be written
   to this register to place them into the FIFO buffer.
 
@@ -151,9 +151,9 @@ void mfrc630_write_fifo(const uint8_t* data, uint16_t len);
   \param [out] rx The data read from the FIFO is placed into this array.
   \param [in] len The number of bytes to be read from the FIFO.
 
-  \warning This reads regardless of MFRC630_REG_FIFOLENGTH, if there aren't enough bytes present in the FIFO, they are
-           read from the chip anyway, these bytes should not be used. (The returned bytes from an empty FIFO are often
-           identical to the last valid byte that was read from it.)
+  \warning This reads regardless of `#MFRC630_REG_FIFOLENGTH`, if there aren't enough bytes present in the FIFO, they
+           are read from the chip anyway, these bytes should not be used. (The returned bytes from an empty FIFO are
+           often identical to the last valid byte that was read from it.)
  */
 void mfrc630_read_fifo(uint8_t* rx, uint16_t len);
 //! @}
@@ -196,7 +196,7 @@ void mfrc630_cmd_load_reg(uint16_t address, uint8_t regaddr, uint16_t length);
   @brief Load protocol settings.
   
   Loads register settings for the protocol indicated. Can configure different protocols for rx and tx. The most common
-  protocol is `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER` which is the default protocol for the SELECT procedure.
+  protocol is `#MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER` which is the default protocol for the SELECT procedure.
 
   The most common protocols are listed in the datasheet, but the MFRC630 Quickstart Guide AN11022 gives a complete
   description.
@@ -504,6 +504,7 @@ void mfrc630_AN1102_recommended_registers_no_transmitter(uint8_t protocol);
            `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER`, `MFRC630_PROTO_ISO14443A_212_MILLER_BPSK`,
            `MFRC630_PROTO_ISO14443A_424_MILLER_BPSK` and `MFRC630_PROTO_ISO14443A_848_MILLER_BPSK` were copied. The
             recommended values for the other protocols can be found in the application note.
+    \param [in] skip The number of registers to skip from the start.
 */
 void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip);
 //!  @}
@@ -511,24 +512,28 @@ void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip);
 // ---------------------------------------------------------------------------
 // ISO 14443A
 // ---------------------------------------------------------------------------
+/*! \defgroup iso14443a ISO14443A
+    \brief Functions for card wakeup and UID discovery..
 
-// Perform an REQA transmission, response is returned.
-// This instruction modifies the registers.
-// Returns 0 on failure.
+  @{
+*/
+
+/*! \brief Sends an Request Command, Type A.
+
+    This sends the ISO14443 REQA request, cards in IDLE mode should answer to this.
+
+    \return The Answer to request A byte (ATQA), or zero in case of no answer.
+*/
 uint16_t mfrc630_iso14443a_REQA();
 
-// Perform the SELECT procedure to determine the UID.
-// This instruction modifies the registers.
-// uid: The UID that is selected and discovered is written to this pointer.
-// sak: The last SAK byte retrieved for this UID is stored here.
-// returns: the length of the uid in bytes, or 0 in case of failure.
-uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak);
-/*
+/*! \brief Performs the SELECT procedure to discover a card's UID.
+
   The select procedure is explained quite complex in the ISO norm.
-  Conceptually it is not quite hard though...
+
+  Conceptually it is not all that complex:
     - The cascade level can be seen as a prefix to ensure both the PICC and PCD
       are working on identifying the same part of the UID.
-    - Then, the entire anti-collision scheme is more of a binary search, the
+    - The entire anti-collision scheme is more of a binary search, the
       PICC sends the CASCADE level prefix, then the NVB byte, this field deter-
       mines how many bits of the UID will follow, this allows the PICC's to
       listen to this and respond if their UID's match these first bits with the
@@ -542,86 +547,131 @@ uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak);
       bit value that's in the pointer at the same position as the collision, or
       atleast for the first cascade level that works, after that it's off by a
       byte because of the cascade tag, see the actual implementation.
-  Returns 0, in case of failure, or the length of the UID in bytes that was
-  selected (4, 7 or 10).
+
+  \param [out] uid: The UID of the card will be stored into this array.
+  \param [out] sak: The last SAK byte received during the SELECT procedure is placed here, this often holds information
+                    about the type of card.
+  \return The length of the UID in bytes (4, 7, 10), or 0 in case of failure.
+*/
+uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak);
+//!  @}
+
+// ---------------------------------------------------------------------------
+// MIFARE
+// ---------------------------------------------------------------------------
+/*! \defgroup mifare MIFARE
+    \brief Functions to interact with MIFARE RFID tags / cards.
+
+
+    MIFARE cards have memory blocks of 16 bytes, read and write operations are always done one entire block of 16 bytes
+    at a time.
+  @{
 */
 
-// ---------------------------------------------------------------------------
-// MIFARE 
-// ---------------------------------------------------------------------------
 
-// Performs the MIFARE standard authentication.
-// uid: The first four bytes of the UID are used.
-// block_address: The block number to authenticate.
-// key_type: The MIFARE key A or B (0x60 or 0x61) to use. This is either
-//           MFRC630_MF_AUTH_KEY_A or MFRC630_MF_AUTH_KEY_B
-// returns: 0 in case of failure, nonzero in case of success.
-// 
-// This function is a higher-level wrapper around the MF authenticate command.
-// internally it calls mfrc630_auth which is described above, the result of the
-// authentication is checked to identify whether it appears to have succeeded.
-//
-// The key must be loaded into the key buffer, by one of the following functions: 
-//      void mfrc630_load_key_E2(uint8_t key_nr);
-//      void mfrc630_load_key(uint8_t* key);
-//
-// Once authenticated, the authentication MUST be stopped manually by calling
-// the mfrc630_MF_deauth() function or otherwires disabling the Crypto1 ON bit
-// in the status register.
+/*! \brief Perform a MIFARE authentication procedure.
+
+    This function is a higher-level wrapper around the MF authenticate command.
+    internally it calls `mfrc630_cmd_auth()` which is described above, the result of the
+    authentication is checked to identify whether it appears to have succeeded.
+
+    The key must be loaded into the key buffer, by one of the following functions:
+    \code
+         void mfrc630_cmd_load_key_E2(uint8_t key_nr);
+         void mfrc630_cmd_load_key(uint8_t* key);
+    \endcode
+
+    Once authenticated, the authentication MUST be stopped manually by calling
+    the `mfrc630_MF_deauth()` function or otherwires disabling the Crypto1 ON bit
+    in the status register.
+
+    \param [in] key_type The MIFARE key A or B ( `#MFRC630_MF_AUTH_KEY_A` = 0x60 or `#MFRC630_MF_AUTH_KEY_B` = 0x61) to
+                use.
+    \param [in] block The block to authenticate.
+    \param [in] uid The authentication procedure required the first four bytes of the card's UID to authenticate.
+    \return 0 in case of failure, nonzero in case of success.
+*/
 uint8_t mfrc630_MF_auth(const uint8_t* uid, uint8_t key_type, uint8_t block);
 
-// Disable the Crypto1 bit from the status register to disable encryption again.
+/*! \brief Disables MIFARE authentication.
+
+  Disable the Crypto1 bit from the status register to disable encryption. This bit will never change to 0 by itself, so
+  the register must be overwritten by the MCU.
+*/
 void mfrc630_MF_deauth();
 
-// Read a block of memory from a previously authenticated card.
-// block_address: The block index to retrieve.
-// dest: The pointer in which to write the bytes read from the card.
-// returns: 0 for failure, otherwise the number of bytes received.
-// This function writes a maximum of 16 bytes to dest, and cannot deal with data
-// that is longer than 16 bytes.
+/*! \brief Read a block of memory from an authenticated card.
+
+    Try to read a block of memory from the card with the appropriate timeouts and error checking.
+
+
+    \param [in] block_address The block to read.
+    \param [out] dest The array in which to write the 16 bytes read from the card.
+    \return 0 for failure, otherwise the number of bytes received.
+*/
 uint8_t mfrc630_MF_read_block(uint8_t block_address, uint8_t* dest);
 
-// Write a block of memory to a previously authenticated card.
-// block_address: The block index to write to.
-// source: The pointer in which the bytes to be written are.
-// returns: 0 for failure, nonzero means success.
-uint8_t mfrc630_MF_write_block(uint8_t block_address,const uint8_t* source);
+/*! \brief Write a block of memory to an authenticated card.
+
+    Try to write a block of memory from the card with the appropriate timeouts and error checking.
+
+    \param [in] block_address The block to write to.
+    \param [in] source The array containing the 16 bytes to be written to this block.
+    \return 0 for failure, nonzero means success.
+*/
+uint8_t mfrc630_MF_write_block(uint8_t block_address, const uint8_t* source);
 
 
-/*
+/*! \brief An example to read the first four blocks.
 
-  // Load the correct register settings with:
-   mfrc630_cmd_load_protocol(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER, MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
-   mfrc630_AN1102_recommended_registers(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
+  Reading from a MIFARE card has the following steps, which are implemented in this function.
+
+  Load the correct register settings with:
+    \code
+      mfrc630_AN1102_recommended_registers(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
+    \endcode
 
   The normal procedure to read a card would be to wake them up using:
-    mfrc630_iso14443a_REQA();
+    \code
+      mfrc630_iso14443a_REQA();
+    \endcode
 
   If there is a response, start the SELECT procedure with 
-    uint8_t uid_len = mfrc630_iso14443a_select(uid, &sak);
+    \code
+      uint8_t uid_len = mfrc630_iso14443a_select(uid, &sak);
+    \endcode
 
   If uid_len is nonzero, we have found a card and UID. We can attempt to
   authenticate with it, for example with the default key:
     
+    \code
       uint8_t FFkey[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
       mfrc630_cmd_load_key(FFkey); // load into the key buffer
+    \endcode
 
   Then attempt to authenticate block 0 using this FFkey as KEY_A type:
-    mfrc630_MF_auth(uid, MFRC630_MF_AUTH_KEY_A, 0)
+    \code
+      mfrc630_MF_auth(uid, MFRC630_MF_AUTH_KEY_A, 0)
+    \endcode
 
   Finally, if that succeeds, we may use:
-    len = mfrc630_MF_read_block(0, readbuf)
+    \code
+      len = mfrc630_MF_read_block(0, readbuf)
+    \endcode
 
   To read block 0 from the card. After which we call:
-    mfrc630_MF_deauth()
-
+    \code
+      mfrc630_MF_deauth()
+    \endcode
   To disable the currently enabled encryption process.
 */
-// Implements the above steps and prints output.
 void mfrc630_MF_example_dump();
+//!  @}
+
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // MFRC630_H_
+#endif  // MFRC630_H_
