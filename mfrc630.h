@@ -89,10 +89,10 @@ extern void mfrc630_SPI_unselect();
 
 //! @}
 // ---------------------------------------------------------------------------
-// SPI interface functions.
+// Register interaction functions.
 // ---------------------------------------------------------------------------
 
-/*! \defgroup interface Interface
+/*! \defgroup register Register interaction.
     \brief Manipulate the chip's registers.
 
     These functions use the SPI communication functions to interact with the hardware. All interaction with the chip
@@ -203,6 +203,7 @@ void mfrc630_cmd_load_reg(uint16_t address, uint8_t regaddr, uint16_t length);
 
   \param [in] rx The protocol number to load for the receiving frontend.
   \param [in] tx The protocol number to load for the tranmitting frontend.
+
  */
 void mfrc630_cmd_load_protocol(uint8_t rx, uint8_t tx);
 
@@ -260,20 +261,70 @@ void mfrc630_cmd_auth(uint8_t key_type, uint8_t block_address, const uint8_t* ca
 // ---------------------------------------------------------------------------
 // Utility functions
 // ---------------------------------------------------------------------------
+/*! \defgroup utility Utility
+    \brief Various utility functions for often performed actions.
 
-// Flush the FIFO.
+  @{
+*/
+
+
+/*!
+  @brief Flush the FIFO buffer.
+
+  This function clears all contents that are currently in the FIFO.
+
+ */
 void mfrc630_flush_fifo();
 
-// Returns the length of the fifo.
+/*!
+  @brief Get the FIFO length.
+
+  Returns the current number of bytes in the FIFO.
+
+  \warning This function only returns the first 8 bits of the FIFO length, if the 512 byte FIFO is used, only the least
+           significant eight bits will be returned.
+  
+  \return The number of bytes currently in the FIFO.
+ */
 uint16_t mfrc630_fifo_length();
 
-// Interrupt functions, these are used so often it's useful to have a function.
-void mfrc630_clear_irq0(); // clear irq0
-void mfrc630_clear_irq1(); // clear irq1
-uint8_t mfrc630_irq0();  // retrieve irq0
-uint8_t mfrc630_irq1();  // retrieve irq0
 
-// Debug function, it prints n bytes from data in hex format.
+/*!
+  @brief Clear the interrupt0 flags.
+
+  Resets the interrupt 0 register (`MFRC630_REG_IRQ0`).
+ */
+void mfrc630_clear_irq0();
+/*!
+  @brief Clear the interrupt1 flags.
+
+  Resets the interrupt 1 register (`MFRC630_REG_IRQ1`).
+ */
+void mfrc630_clear_irq1();
+
+
+/*!
+  @brief Get the value of the interrupt 0 register.
+
+  \return The value of the `MFRC630_REG_IRQ0` register.
+ */
+uint8_t mfrc630_irq0();
+
+/*!
+  @brief Get the value of the interrupt 1 register.
+
+  \return The value of the `MFRC630_REG_IRQ1` register.
+ */
+uint8_t mfrc630_irq1();
+
+/*!
+  @brief Print an array in hexadecimal format using `MFRC630_PRINTF`.
+
+  Prints the bytes in `data` in hexadecimal format, separated by spaces using the `MFRC630_PRINTF` macro, if defined.
+
+  \param [in] data The array to be printed.
+  \param [in] len The number of bytes to print..
+ */
 void mfrc630_print_block(const uint8_t* data, uint16_t len);
 
 /*!
@@ -282,7 +333,8 @@ void mfrc630_print_block(const uint8_t* data, uint16_t len);
   This instruction transfers a page from the EEPROM into the FIFO and then transfers this data from the FIFO
   into an array. It always transfers 64 bytes, as such `dest` must be (atleast) 64 bytes long.
 
-  This basically calls mfrc630_cmd_read_E2() and then transfers the FIFO with mfrc630_read_fifo().
+  This basically calls mfrc630_cmd_read_E2() and then transfers the FIFO with mfrc630_read_fifo(). This is useful for
+  dumping the entire EEPROM.
 
   \param [out] dest The array to write the data into.
   \param [in] page The page to read from the EEPROM. (This gets multiplied by 64 to obtain the start address).
@@ -290,78 +342,171 @@ void mfrc630_print_block(const uint8_t* data, uint16_t len);
  */
 uint8_t mfrc630_transfer_E2_page(uint8_t* dest, uint8_t page);
 
+//!  @}
+
 // ---------------------------------------------------------------------------
 // Timer functions
 // ---------------------------------------------------------------------------
+/*! \defgroup timer Timer
+    \brief Functions for manipulating the timers.
 
-// The timers can be treated uniformly, so making functions for them makes
-// sense. The first argument 'timer' specifies which timer to use (0-4).
+    The MFRC630 has 5 timers, the first four can be treated more or less similarly, the last timer `Timer4` has a
+    different control register.
 
-// Control whether a timer is running without affecting the other timers.
-// Seems to trigger timer reload?
+    Timer 0-3 can be treated in a similar way, and as such the functions take an argument that specifies which timer
+    to manipulate.
+
+    Timer4 is special, read the datasheet on how to use that timer as it has other clock sources and properties.
+
+
+  @{
+*/
+
+/*!
+  @brief Activates a timer.
+
+  This sets the the `MFRC630_REG_TCONTROL` register to enable or disable this timer.
+
+  \note Seems to trigger timer reset?
+
+  \param [in] timer Specifies which timer to use (0, 1, 2 or 3).
+  \param [in] active Should be `0` to deactivate the timer, `1` to activate it.
+ */
 void mfrc630_activate_timer(uint8_t timer, uint8_t active);
 
 // Set the timer control field of the timer.
 // value: the value to set the timer's control field to.
-void mfrc630_timer_set_control(uint8_t timer, uint8_t value);
-// MFRC630_TCONTROL_CLK_211KHZ, results in 4.52e-06 ~ 5 uSec ticks.
-// MFRC630_TCONTROL_CLK_13MHZ, results in 7.69e-08 ~ 76 nSec ticks.
+/*!
+  @brief Sets the timer control register.
 
-// Set the reload value of a timer, it counts down from here.
+  This sets the `T[0-3]Control` register to the provided value. The value speficies the propertief of StopRx, Start
+  AutoRestart and Clk for this timer.
+
+  \param [in] timer Specifies which timer to use (0, 1, 2 or 3).
+  \param [in] value This can be a combination of the defines associated with the Timer controls.
+  \see MFRC630_TCONTROL_STOPRX
+  \see MFRC630_TCONTROL_START_NOT, MFRC630_TCONTROL_START_TX_END, MFRC630_TCONTROL_START_LFO_WO,
+       MFRC630_TCONTROL_START_LFO_WITH
+  \see MFRC630_TCONTROL_CLK_13MHZ, MFRC630_TCONTROL_CLK_211KHZ, MFRC630_TCONTROL_CLK_UF_TA1, MFRC630_TCONTROL_CLK_UF_TA2
+ */
+void mfrc630_timer_set_control(uint8_t timer, uint8_t value);
+
+/*!
+  @brief Sets the reload value of the timer.
+
+  This counter starts counting down from this reload value, an underflow occurs when the timer reaches zero.
+
+  \param [in] timer Specifies which timer to use (0, 1, 2 or 3).
+  \param [in] value The value from which to start the counter. 
+ */
 void mfrc630_timer_set_reload(uint8_t timer, uint16_t value);
 
-// Set the value of a timer, it counts downwards.
+/*!
+  @brief Sets the current value of this timer..
+
+  Sets the current value of this counter, it counts down from this given value.
+
+  \param [in] timer Specifies which timer to use (0, 1, 2 or 3).
+  \param [in] value The value to set the counter to. 
+ */
 void mfrc630_timer_set_value(uint8_t timer, uint16_t value);
+
+
+/*!
+  @brief Retrieve the current value of a timer.
+
+  Reads the current value of the given timer and returns the result.
+
+  \param [in] timer Specifies which timer to use (0, 1, 2 or 3).
+  \return The current value of this timer.
+ */
 uint16_t mfrc630_timer_get_value(uint8_t timer);
-// From datasheet;
-// If the counter value has reached a value of 0000h and the interrupts are
-// enabled for this specific timer, an interrupt will be generated as soon as
-// the next clock is received.
-// So an underflow IRQ is reached when the timers reaches 0.
-
-// Timer4 is special and has different fields for the control!
-
+//!  @}
 
 // ---------------------------------------------------------------------------
 // From documentation
 // ---------------------------------------------------------------------------
+/*! \defgroup documentation From application notes
+    \brief Several functions written based on application notes.
+
+    Two application notes are of particular interest:
+      - Application Note 11145:
+          CLRC663, MFRC631, MFRC 630, SLRC610 Low Power Card Detection
+          http://www.nxp.com/documents/application_note/AN11145.pdf
+      - Application Note 11022:
+          CLRC663 Quickstart Guide
+          http://www.nxp.com/documents/application_note/AN11022.pdf
+
+    The first details how to perform an IQ measurement to determine the thresholds for the Low Power Card Detection
+    (LPCD). The second describes default register values for various protocols and the protocol numbers that are
+    associated to them.
+     
+  @{
+*/
 
 // From Application Note 11145:
 //      CLRC663, MFRC631, MFRC 630, SLRC610 Low Power Card Detection
 //      http://www.nxp.com/documents/application_note/AN11145.pdf
 
 //      IQ measurement, section 3.2.1
+/*! \brief Start IQ Measurement.
+
+    From Application Note 11145, section 3.2.1, it configures the registers to perform an IQ measurement.
+*/
 void mfrc630_AN11145_start_IQ_measurement();
 //      wait about 50ms between them.
+/*! \brief Stop IQ Measurement.
+
+    Stop the previously started IQ measurement. The application note uses a delay of 50 ms between the start and stop.
+
+    The actual vaues can be retrieved with:
+    \code
+      uint8_t I_value = mfrc630_read_reg(MFRC630_REG_LPCD_I_RESULT) & 0x3F
+      uint8_t Q_value = mfrc630_read_reg(MFRC630_REG_LPCD_Q_RESULT) & 0x3F
+    \endcode
+*/
 void mfrc630_AN11145_stop_IQ_measurement();
-//      then retrieve them with 
-//      mfrc630_read_reg(MFRC630_REG_LPCD_I_RESULT) & 0x3F
-//      mfrc630_read_reg(MFRC630_REG_LPCD_Q_RESULT) & 0x3F
+
 
 // From Application Note 11022:
 //      CLRC663 Quickstart Guide
 //      http://www.nxp.com/documents/application_note/AN11022.pdf
 
-// Set registers to recommended values for a certain protocol.
-// protocol: Specify which protocol to configure the default settings for.
-void mfrc630_AN1102_recommended_registers(uint8_t protocol);
-// Only copied the following protocols:
-//      MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER
-//      MFRC630_PROTO_ISO14443A_212_MILLER_BPSK
-//      MFRC630_PROTO_ISO14443A_424_MILLER_BPSK
-//      MFRC630_PROTO_ISO14443A_848_MILLER_BPSK
-//      There are more in the Application Note!
+/*! \brief Set the registers to the recommended values.
 
-// Set registers to recommended values for a certain protocol, skipping those
-// before the MFRC630_REG_TXCRCPRESET register.
-// This can be useful because those before that register require hardware
-// dependent customization.
+    This function uses the recommended registers from the datasheets, it should yield identical results to the 
+    `mfrc630_cmd_load_protocol()` function.
+
+    \param [in] protocol The protocol index to set the registers to. Only
+           `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER`, `MFRC630_PROTO_ISO14443A_212_MILLER_BPSK`,
+           `MFRC630_PROTO_ISO14443A_424_MILLER_BPSK` and `MFRC630_PROTO_ISO14443A_848_MILLER_BPSK` were copied. The
+            recommended values for the other protocols can be found in the application note.
+*/
+void mfrc630_AN1102_recommended_registers(uint8_t protocol);
+
+/*! \brief Set the registers to the recommended values starting from `MFRC630_REG_TXCRCPRESET`.
+
+    Since the transmitter registers can require harware-specific customization to work correctly, this function sets the
+    recommended values of the registers after the transmitter settings.
+
+    \param [in] protocol The protocol index to set the registers to. Only
+           `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER`, `MFRC630_PROTO_ISO14443A_212_MILLER_BPSK`,
+           `MFRC630_PROTO_ISO14443A_424_MILLER_BPSK` and `MFRC630_PROTO_ISO14443A_848_MILLER_BPSK` were copied. The
+            recommended values for the other protocols can be found in the application note.
+*/
 void mfrc630_AN1102_recommended_registers_no_transmitter(uint8_t protocol);
 
-// Sets recommended registers, skipping an arbitrary amount at the start of the
-// specification.
+/*! \brief Set the registers to the recommended values, skipping the first `skip` registers.
+
+    Sets the recommended registers but allows for an arbitrary number of registers to be skipped at the start.
+
+    \param [in] protocol The protocol index to set the registers to. Only
+           `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER`, `MFRC630_PROTO_ISO14443A_212_MILLER_BPSK`,
+           `MFRC630_PROTO_ISO14443A_424_MILLER_BPSK` and `MFRC630_PROTO_ISO14443A_848_MILLER_BPSK` were copied. The
+            recommended values for the other protocols can be found in the application note.
+*/
 void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip);
-// This actually is used by the methods above.
+//!  @}
 
 // ---------------------------------------------------------------------------
 // ISO 14443A

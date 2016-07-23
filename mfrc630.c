@@ -27,7 +27,7 @@
 /** @file */
 
 // ---------------------------------------------------------------------------
-// SPI interface functions.
+// Register interaction functions.
 // ---------------------------------------------------------------------------
 uint8_t mfrc630_read_reg(uint8_t reg) {
   uint8_t instruction_tx[2] = {(reg << 1) | 0x01, 0};
