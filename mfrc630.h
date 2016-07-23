@@ -192,36 +192,71 @@ void mfrc630_cmd_read_E2(uint16_t address, uint16_t length);
  */
 void mfrc630_cmd_load_reg(uint16_t address, uint8_t regaddr, uint16_t length);
 
+/*!
+  @brief Load protocol settings.
+  
+  Loads register settings for the protocol indicated. Can configure different protocols for rx and tx. The most common
+  protocol is `MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER` which is the default protocol for the SELECT procedure.
 
-// Loads a protocol according to the protocol definitions. See protocol defines
-// in the _def.h file.
-// rx: The index for the rx protocol values.
-// tx: The index for the tx protocol values.
+  The most common protocols are listed in the datasheet, but the MFRC630 Quickstart Guide AN11022 gives a complete
+  description.
+
+  \param [in] rx The protocol number to load for the receiving frontend.
+  \param [in] tx The protocol number to load for the tranmitting frontend.
+ */
 void mfrc630_cmd_load_protocol(uint8_t rx, uint8_t tx);
 
-// Transmit the data and enter receive mode after transmission.
-// data: pointer to the data to be transmitted.
-// len: the number of bytes to be read from this pointer and transmitted.
+/*!
+  @brief Transmit the bytes provided and go into receive mode.
+
+  This function loads the data from the `data` array into the FIFO, and then issues the `MFRC630_CMD_TRANSCEIVE`
+  command, which sends the data in the FIFO and switches to receiving mode afterwards.
+
+  \param [in] data The data to be transmitted.
+  \param [in] len The numeber of bytes to be read from `data` and be transmitted..
+ */
 void mfrc630_cmd_transceive(const uint8_t* data, uint16_t len);
 
-// Set the device into idle mode.
+/*!
+  @brief Set the device into idle mode.
+
+  Stops the currently active command and return to idle mode.
+ */
 void mfrc630_cmd_idle();
 
-// Load a key from the EEPROM into the key buffer.
-// key_nr: Specify which key to load into the key buffer.
+/*!
+  @brief Loads a key from the EEPROM into the key buffer.
+
+  This function can load a key from the MIFARE key area in the EEPROM into the key buffer. This section of the EEPROM
+  can only be written. The key buffer is a part of memory in the MFRC630 used for the MIFARE authentication procedure.
+
+  \param [in] key_nr Loads the key stored for this index.
+ */
 void mfrc630_cmd_load_key_E2(uint8_t key_nr);
 
-// Load a key into the keybuffer.
-// key: Pointer to the 6 byte key that is to be loaded into the keybuffer.
+/*!
+  @brief Loads the provided key into the key buffer.
+
+  This function reads 6 bytes from the `key` array into the FIFO and then loads the key into the key buffer.
+
+  \param [in] key Array which holds the MIFARE key, it is always 6 bytes long.
+ */
 void mfrc630_cmd_load_key(const uint8_t* key);
 
-// Performs the MIFARE standard authentication.
-// block_address: The block number on which to authenticate.
-// key_type: The MIFARE key A or B (0x60 or 0x61) to use.
-// block_address: The block number on which to authenticate.
-// card_uid: The first four bytes of the UID are used.
+/*!
+  @brief Perform MIFARE authentication procedure with a card.
+
+  This function attemps to authenticate with the specified card using the key which is currently in the key buffer.
+  This function is usually preceded by either the `mfrc630_cmd_load_key_E2()` or `mfrc630_cmd_load_key()` functions.
+
+  \param [in] key_type The MIFARE key A or B (`MFRC630_MF_AUTH_KEY_A` = 0x60 or `MFRC630_MF_AUTH_KEY_B` = 0x61) to use.
+  \param [in] block_address The block on which to authenticate.
+  \param [in] card_uid The authentication procedure required the first four bytes of the card's UID to authenticate.
+ */
 void mfrc630_cmd_auth(uint8_t key_type, uint8_t block_address, const uint8_t* card_uid);
+
 //! @}
+
 // ---------------------------------------------------------------------------
 // Utility functions
 // ---------------------------------------------------------------------------
