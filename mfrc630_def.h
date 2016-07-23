@@ -488,4 +488,4 @@
 
 //! @}
 
-#endif // MFRC630_DEF_H_
+#endif  // MFRC630_DEF_H_

@@ -293,7 +293,15 @@ void mfrc630_AN1102_recommended_registers_no_transmitter(uint8_t protocol) {
 // ---------------------------------------------------------------------------
 // ISO 14443A
 // ---------------------------------------------------------------------------
+
 uint16_t mfrc630_iso14443a_REQA() {
+  return mfrc630_iso14443a_WUPA_REQA(MFRC630_ISO14443_CMD_REQA);
+}
+uint16_t mfrc630_iso14443a_WUPA() {
+  return mfrc630_iso14443a_WUPA_REQA(MFRC630_ISO14443_CMD_WUPA);
+}
+
+uint16_t mfrc630_iso14443a_WUPA_REQA(uint8_t instruction) {
   mfrc630_cmd_idle();
   mfrc630_AN1102_recommended_registers_no_transmitter(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
   mfrc630_flush_fifo();
@@ -309,7 +317,7 @@ uint16_t mfrc630_iso14443a_REQA() {
   mfrc630_write_reg(MFRC630_REG_RXBITCTRL, 0);
 
   // ready the request.
-  uint8_t send_req[] = {MFRC630_ISO14443_CMD_REQA};
+  uint8_t send_req[] = {instruction};
 
   // clear interrupts
   mfrc630_clear_irq0();
@@ -540,9 +548,9 @@ uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak) {
 
       // read the UID Cln so far from the buffer.
       uint8_t rx_len = mfrc630_fifo_length();
-      uint8_t buf[rx_len];  // TODO: Calculate the right length here.
+      uint8_t buf[5];  // Size is maximum of 5 bytes, UID[0-3] and BCC.
 
-      mfrc630_read_fifo(buf, rx_len);
+      mfrc630_read_fifo(buf, rx_len < 5 ? rx_len : 5);
 
       MFRC630_PRINTF("Fifo %hhd long: ", rx_len);
       mfrc630_print_block(buf, rx_len);
@@ -771,6 +779,8 @@ uint8_t mfrc630_MF_read_block(uint8_t block_address, uint8_t* dest) {
   return rx_len;
 }
 
+// The read and write block functions share a lot of code, the parts they have in common could perhaps be extracted
+// to make it more readable.
 
 uint8_t mfrc630_MF_write_block(uint8_t block_address, const uint8_t* source) {
   mfrc630_flush_fifo();

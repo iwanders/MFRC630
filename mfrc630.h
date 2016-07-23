@@ -526,6 +526,22 @@ void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip);
 */
 uint16_t mfrc630_iso14443a_REQA();
 
+/*! \brief Sends an Wake-Up Command, Type A.
+
+    This sends the ISO14443 WUPA request, cards in IDLE or HALT mode should answer to this.
+
+    \return The Answer to request A byte (ATQA), or zero in case of no answer.
+*/
+uint16_t mfrc630_iso14443a_WUPA();
+
+/*! \brief Used to send WUPA and REQA.
+
+    This actually sends WUPA and REQA and returns the response byte.
+
+    \return The Answer to request A byte (ATQA), or zero in case of no answer.
+*/
+uint16_t mfrc630_iso14443a_WUPA_REQA(uint8_t instruction);
+
 /*! \brief Performs the SELECT procedure to discover a card's UID.
 
   The select procedure is explained quite complex in the ISO norm.
