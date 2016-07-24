@@ -303,7 +303,7 @@ uint16_t mfrc630_iso14443a_WUPA() {
 
 uint16_t mfrc630_iso14443a_WUPA_REQA(uint8_t instruction) {
   mfrc630_cmd_idle();
-  mfrc630_AN1102_recommended_registers_no_transmitter(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
+  // mfrc630_AN1102_recommended_registers_no_transmitter(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
   mfrc630_flush_fifo();
 
   // Set register such that we sent 7 bits, set DataEn such that we can send
@@ -375,7 +375,7 @@ uint16_t mfrc630_iso14443a_WUPA_REQA(uint8_t instruction) {
 
 uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak) {
   mfrc630_cmd_idle();
-  mfrc630_AN1102_recommended_registers_no_transmitter(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
+  // mfrc630_AN1102_recommended_registers_no_transmitter(MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER);
   mfrc630_flush_fifo();
 
   MFRC630_PRINTF("UID input: ");
