@@ -9,20 +9,20 @@ STM32F0xx chip.
 Design
 ------
 The library itself is written in C, it requires the chip to be connected to the SPI interface, furthermore, it can only
-deal with one chip that's connected to the microcontroller.
+deal with a single chip that's connected to the microcontroller. The library does *not* require time or delay functions
+neither does it need an interrupt pin, all that is required is the SPI bus. The handling of timeouts is done by using
+one of the chip's timers.
 
 The library is clearly structured, providing functionality from low level to higher level:
-* HAL:  Three functions are to be created to allow the library to interact with the SPI bus. The library does *not*
-        require time or delay functions nor the interrupt pin. The handling of timeouts is done by using the chip's
-        timers.
-* Register interaction: The adresses for all registers are provided as define statements, functions for FIFO reading and
-        writing are available, as well as reading and writing normal registers.
-        For various important registers there are additional define statements available that make it easier to interact
-        with these.
-* Commands: The chip can be instructed to execute various commands, these functions provide convenient wrappers for     
-            these and handle the arguments required for each command.
-* ISO14443A: Provides the necessities from ISO14443a to interact with RFID tags: the REQA, WUPA and SELECT procedure
-             (with collision handling) to determine the UID(s).
+
+* HAL:  Three functions are to be created to allow the library to interact with the SPI bus.
+
+* Register interaction: The adresses for all registers are provided as define statements, functions for FIFO reading and writing are available, as well as reading and writing normal registers. For various important registers there are additional define statements available that make it easier to interact with these.
+
+* Commands: The chip can be instructed to execute various commands, these functions provide wrappers for these and handle the arguments required for each command.
+
+* ISO14443A: Provides the necessities from ISO14443a to interact with RFID tags: the REQA, WUPA and SELECT procedure (with collision handling) to determine the UID(s).
+
 * MIFARE: Provides functions to authenticate, read and write blocks on MIFARE cards.
 
 Documentation
@@ -37,13 +37,13 @@ An example for an Arduino compatible board is [provided](examples/arduino_exampl
 Miscellaneous
 -------------
 This chip seems to be significantly less popular than the [MFRC522][nxp_mfrc522], if you are starting with RFID, that
-might be a better choice to go, as there is a well-tested [library][arduino_mfrc522] for that chip.
+might be a better choice to use, as there is a well-tested [library][arduino_mfrc522] for that chip.
 
 I came across this chip when I was repurposing off-the-shelf hardware to do my bidding; Surprisingly, no library was
-available to work with this chip. Improvements / additional examples are welcome.
+available for this chip. Improvements / additional examples are welcome.
 
 License
-------
+-------
 MIT License, see LICENSE.txt.
 
 Copyright (c) 2016 Ivor Wanders

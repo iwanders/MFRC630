@@ -186,14 +186,13 @@
 //! @}
 
 /*! \addtogroup timer
-
-    The defines starting with `MFRC630_TCONTROL_` are associated with the timer control registers.
   @{
 
     \defgroup timer_control Timer Control
       \brief Timer Control register defines.
 
-      For use with `mfrc630_timer_set_control()`.
+      For use with `mfrc630_timer_set_control()`, this can be used to modify the parameters of a specific timer. This
+      allows configuration of the timer source, start and stop criteria.
       @{
 */
 //! If set, the timer stops after receiving the first 4 bits. If cleared, the timer is not stopped automatically.
@@ -228,7 +227,7 @@
   \defgroup irq0_reg Interrupt 0
         \brief Defines for `#MFRC630_REG_IRQ0`.
 
-        For interpreting the `#MFRC630_REG_IRQ0` register.
+        For interpreting the `#MFRC630_REG_IRQ0` register, this register contains various interrupt flags.
         @{
 */
 // IRQ0 register fields
@@ -255,7 +254,7 @@
   \defgroup irq1_reg Interrupt 1
         \brief Defines for `#MFRC630_REG_IRQ1`.
 
-        For interpreting the `#MFRC630_REG_IRQ1` register.
+        For interpreting the `#MFRC630_REG_IRQ1` register, this register contains various interrupt flags.
         @{
 */
 // IRQ1 register fields
@@ -265,24 +264,25 @@
 #define MFRC630_IRQ1_GLOBAL_IRQ         (1<<6)
 //! Indicated an LPCD interrupt occured.
 #define MFRC630_IRQ1_LPCD_IRQ           (1<<5)
-//! Set to 1 if Timer4 has an underslow.
+//! Set to 1 if Timer4 has an underflow.
 #define MFRC630_IRQ1_TIMER4_IRQ         (1<<4)
-//! Set to 1 if Timer3 has an underslow.
+//! Set to 1 if Timer3 has an underflow.
 #define MFRC630_IRQ1_TIMER3_IRQ         (1<<3)
-//! Set to 1 if Timer2 has an underslow.
+//! Set to 1 if Timer2 has an underflow.
 #define MFRC630_IRQ1_TIMER2_IRQ         (1<<2)
-//! Set to 1 if Timer1 has an underslow.
+//! Set to 1 if Timer1 has an underflow.
 #define MFRC630_IRQ1_TIMER1_IRQ         (1<<1)
-//! Set to 1 if Timer0 has an underslow.
+//! Set to 1 if Timer0 has an underflow.
 #define MFRC630_IRQ1_TIMER0_IRQ         (1<<0)
 
-//! @}
+    //! @}
 
 /*!
   \defgroup irq0en_reg Interrupt 0 Enable
         \brief Defines for `#MFRC630_REG_IRQ0EN`.
 
-        For manipulating the `#MFRC630_REG_IRQ0EN` register.
+        For manipulating the `#MFRC630_REG_IRQ0EN` register, this register controls which interrupts from IRQ0 trigger
+        a global interrupt (`#MFRC630_IRQ1_GLOBAL_IRQ`).
         @{
 */
 
@@ -304,13 +304,14 @@
 //! If set allow rx SOF irq to propagate to the global IRQ.
 #define MFRC630_IRQ0EN_RXSOF_IRQEN      (1<<0)
 
-//! @}
+    //! @}
 
 /*!
   \defgroup irq1en_reg Interrupt 1 Enable
         \brief Defines for `#MFRC630_REG_IRQ1EN`.
 
-        For manipulating the `#MFRC630_REG_IRQ1EN` register.
+        For manipulating the `#MFRC630_REG_IRQ1EN` register, this register controls which interrupts from IRQ1 trigger
+        a global interrupt (`#MFRC630_IRQ1_GLOBAL_IRQ`).
 
         \note The timer IRQ's are conveniently correct when bitshifting the id: `1 << timer_id.`
         @{
@@ -334,13 +335,14 @@
 //! If set allow Timer 0 irq to propagate to the global IRQ.
 #define MFRC630_IRQ1EN_TIMER0_IRQEN        (1<<0)
 
-//! @}
+    //! @}
 
 /*!
   \defgroup error_reg Error
         \brief Defines for `#MFRC630_REG_ERROR`.
 
-        For interpreting the `#MFRC630_REG_ERROR` register.
+        For interpreting the `#MFRC630_REG_ERROR` register, this register holds information about errors that have
+        occured.
         @{
 */
 
@@ -362,13 +364,18 @@
 //! A data integrity error occured.
 #define MFRC630_ERROR_INTEGERR          (1<<0)
 
-//! @}
+    //! @}
 
 /*!
   \defgroup crc_reg CRC
         \brief Defines to manipulate `#MFRC630_REG_TXCRCPRESET` and `#MFRC630_REG_RXCRCCON`.
 
-        For the `#MFRC630_REG_TXCRCPRESET` and `#MFRC630_REG_RXCRCCON` registers. \see `#MFRC630_RECOM_14443A_CRC`.
+        For the `#MFRC630_REG_TXCRCPRESET` and `#MFRC630_REG_RXCRCCON` registers. Mainly used ORed with
+        `#MFRC630_RECOM_14443A_CRC` as that allows enabling or disabling the CRC checksum calculation for ISO14443
+        interaction.
+
+        \see `#MFRC630_RECOM_14443A_CRC`.
+
         @{
 */
 
@@ -377,7 +384,7 @@
 //! Disable CRC, should be ORed with `#MFRC630_RECOM_14443A_CRC`.
 #define MFRC630_CRC_OFF           0
 
-//! @}
+    //! @}
 
 /*!
   \defgroup txdatanum_reg Tx Datanum
@@ -395,12 +402,15 @@
 #define MFRC630_TXDATANUM_DATAEN        (1<<3)
 
     //! @}
+
+// close the registers group
 //! @}
 
 
 /*! \addtogroup documentation
     
-    The defines starting with `MFRC630_PROTO_` are the protocol numbers and can be used as such.
+    The defines in @ref protocol_index are the protocol numbers and can be used as such. The
+    `#MFRC630_PROTO_ISO14443A_106_MILLER_MANCHESTER` is the default one for the ISO14443A select procedure.
   @{
 
   \defgroup protocol_index Protocol numbers

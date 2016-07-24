@@ -47,9 +47,11 @@ extern "C" {
     These functions should provide all the neccessary interaction with the hardware. Only the SPI bus is used;
     two functions to select and deselect the chip and a function to transmit and receive bytes over the SPI bus.
 
-    No interrupt pins are required, nor is a delay function.
+    In the examples folder you can find implementations for these three functions for an Arduino-compatible platform
+    and for use on an STM32F0xx chip using STM's Cube HAL.
 
-    \note These functions are marked as `extern` and it is up to the user to ensure that they exist and work correctly.
+    \warning These functions are marked as `extern` and it is up to the user to ensure that they exist and work
+             correctly.
   @{
 */
 
@@ -513,7 +515,15 @@ void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip);
 // ISO 14443A
 // ---------------------------------------------------------------------------
 /*! \defgroup iso14443a ISO14443A
-    \brief Functions for card wakeup and UID discovery..
+    \brief Functions for card wakeup and UID discovery.
+
+    These functions modify registers and do not put them back into the original state. However, if called in the right
+    order (`mfrc630_iso14443a_WUPA_REQA()`, `mfrc630_iso14443a_select()`, and then a function from @ref mifare) the
+    registers should be in the right state.
+
+    In the ISO norm the terms PCD and PICC are used. PCD stands for Proximity Coupling Device, by which they mean the
+    reader device. The PICC is the Proximity Integrated Circuit Card, so the RFID tag / card. I chose to adhere the
+    terminology from the MFRC630 datasheet, which simply refers to 'card' and 'reader'.
 
   @{
 */
@@ -544,27 +554,25 @@ uint16_t mfrc630_iso14443a_WUPA_REQA(uint8_t instruction);
 
 /*! \brief Performs the SELECT procedure to discover a card's UID.
 
-  The select procedure is explained quite complex in the ISO norm.
+  This performs the SELECT procedure as explained in ISO 14443A, this determines the UID of the card, if multiple cards
+  are present, a collision will occur, which is handled according to the norm. This collision handling is explained
+  quite complex in the norm, but conceptually it is not all that complex:
 
-  Conceptually it is not all that complex:
-    - The cascade level can be seen as a prefix to ensure both the PICC and PCD
-      are working on identifying the same part of the UID.
-    - The entire anti-collision scheme is more of a binary search, the
-      PICC sends the CASCADE level prefix, then the NVB byte, this field deter-
-      mines how many bits of the UID will follow, this allows the PICC's to
-      listen to this and respond if their UID's match these first bits with the
-      UID that is transmitted. After this all PICC's (that have matched the UID
-      bits already sent) respond with the remainder of their UIDS. This results
-      in either a complete UID, or in case two PICC's share a few bits but then
-      differ a bit, a collision occurs on this bit. This collision is detected
-      by the PCD, at which point it can chose either to pursue the PICC(s) that
-      has a 0b1 at that position, or pursue the 0b0 at that position.
-      The ISO norm states: A typical implementation adds a (1)b. I use the
-      bit value that's in the pointer at the same position as the collision, or
-      atleast for the first cascade level that works, after that it's off by a
-      byte because of the cascade tag, see the actual implementation.
+    - The cascade level can be seen as a prefix to ensure both the PICC and PCD are working on identifying the same
+      part of the UID.
+    - The entire anti-collision scheme is more of a binary search, the PICC sends the CASCADE level prefix, then the
+      NVB byte, this field determines how many bits of the UID will follow, this allows the PICC's to listen to this
+      and respond if their UID's match these first bits with the UID that is transmitted. After this all PICC's (that
+      have matched the UID bits already sent) respond with the remainder of their UIDS. This results in either a
+      complete UID, or in case two PICC's share a few bits but then differ a bit, a collision occurs on this bit. This
+      collision is detected by the PCD, at which point it can chose either to pursue the PICC(s) that has a 0b1 at that
+      position, or pursue the 0b0 at that position. The ISO norm states: A typical implementation adds a (1)b.
+      I use the bit value that's in the pointer at the same position as the collision, or atleast for the first cascade
+      level that works, after that it's off by a byte because of the cascade tag, see the actual implementation.
 
-  \param [out] uid: The UID of the card will be stored into this array.
+  \param [out] uid: The UID of the card will be stored into this array. This array is also used to determine the choice
+                    between an 0b1 or 0b0 when a collision occurs. The bit that's in `uid` at the collision position is
+                    selected.
   \param [out] sak: The last SAK byte received during the SELECT procedure is placed here, this often holds information
                     about the type of card.
   \return The length of the UID in bytes (4, 7, 10), or 0 in case of failure.
