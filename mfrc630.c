@@ -450,11 +450,12 @@ uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak) {
       // First limit the txdatanum, such that it limits the correct number of bits.
       mfrc630_write_reg(MFRC630_REG_TXDATANUM, (known_bits % 8) | MFRC630_TXDATANUM_DATAEN);
 
-      // set it to insert zeros in case of a collision, (1<<7)
+      // ValuesAfterColl: If cleared, every received bit after a collision is
+      // replaced by a zero. This function is needed for ISO/IEC14443 anticollision (0<<7).
       // We want to shift the bits with RxAlign
       uint8_t rxalign = known_bits % 8;
       MFRC630_PRINTF("Setting rx align to: %hhd\n", rxalign);
-      mfrc630_write_reg(MFRC630_REG_RXBITCTRL, (1<<7) | (rxalign<<4));
+      mfrc630_write_reg(MFRC630_REG_RXBITCTRL, (0<<7) | (rxalign<<4));
 
 
       // then sent the send_req to the hardware,
@@ -602,7 +603,7 @@ uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak) {
     // reset the Tx and Rx registers (disable alignment, transmit full bytes)
     mfrc630_write_reg(MFRC630_REG_TXDATANUM, (known_bits % 8) | MFRC630_TXDATANUM_DATAEN);
     uint8_t rxalign = 0;
-    mfrc630_write_reg(MFRC630_REG_RXBITCTRL, (1 << 7) | (rxalign << 4));
+    mfrc630_write_reg(MFRC630_REG_RXBITCTRL, (0 << 7) | (rxalign << 4));
 
     // actually send it!
     mfrc630_cmd_transceive(send_req, message_length);
