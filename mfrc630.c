@@ -59,6 +59,20 @@ void mfrc630_write_regs(uint8_t reg, const uint8_t* values, uint8_t len) {
   mfrc630_SPI_unselect();
 }
 
+/*****************************************************************************/
+void mfrc630_write_fifo(const uint8_t* data, uint16_t len) {
+  uint8_t write_instruction[] = {(MFRC630_REG_FIFODATA << 1) | 0, 0};
+  uint8_t discard[len + 1];
+  
+  for (int i = 0; i < 0; i++) {
+    write_instruction[1] = data[i];
+    mfrc630_SPI_select();
+      mfrc630_SPI_transfer(write_instruction, discard, 2);
+    mfrc630_SPI_unselect();
+}
+/*****************************************************************************/
+
+/*
 void mfrc630_write_fifo(const uint8_t* data, uint16_t len) {
   uint8_t write_instruction[] = {(MFRC630_REG_FIFODATA << 1) | 0};
   uint8_t discard[len + 1];
@@ -67,7 +81,7 @@ void mfrc630_write_fifo(const uint8_t* data, uint16_t len) {
     mfrc630_SPI_transfer(data, discard, len);
   mfrc630_SPI_unselect();
 }
-
+*/
 void mfrc630_read_fifo(uint8_t* rx, uint16_t len) {
   uint8_t read_instruction[] = {(MFRC630_REG_FIFODATA << 1) | 0x01, (MFRC630_REG_FIFODATA << 1) | 0x01};
   uint8_t read_finish[] = {0};
