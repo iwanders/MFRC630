@@ -76,7 +76,7 @@ void mfrc630_read_fifo(uint8_t* rx, uint16_t len) {
   mfrc630_SPI_select();
     mfrc630_SPI_transfer(read_instruction, discard, 1);
     uint16_t i;
-    for (i=0; i < (len - 1) ; i++) {
+    for (i=1; i < len ; i++) {
       mfrc630_SPI_transfer(read_instruction, rx++, 1);
     }
     mfrc630_SPI_transfer(read_finish, rx++, 1);
