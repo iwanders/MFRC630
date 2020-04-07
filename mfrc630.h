@@ -692,6 +692,29 @@ uint8_t mfrc630_MF_write_block(uint8_t block_address, const uint8_t* source);
 void mfrc630_MF_example_dump();
 //!  @}
 
+// ---------------------------------------------------------------------------
+// ISO15693
+// ---------------------------------------------------------------------------
+/*! \defgroup iso15693 ISO15693
+    \brief Functions to interact with ISO15693 RFID tags / cards.
+
+
+    Basic functionallity to read uid
+  @{
+*/
+/*! \Initializes the reader for iso15693
+
+  Set all registers to the desired value for ISO15693 reading
+*/
+void mfrc630_ISO15693_init(uint8_t protocol, uint8_t buf);
+
+/*! \Reads ISO15693 tag
+
+  Try to Read ISO15693 tag
+*/
+uint8_t mfrc630_ISO15693_readTag(uint8_t *uid);
+
+//!  @}
 
 
 #ifdef __cplusplus

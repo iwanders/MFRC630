@@ -160,6 +160,11 @@
 
 #define MFRC630_CMD_SOFTRESET           0x1F    /*!< (no arguments) ; resets the MFRC630. */
 
+#define MFRC630_CMD_SLEEP				0xC		/*!< (no arguments) ; sends the reader in low power mode */
+
+#define MFRC630_CMD_WAKE				0x00	/*!< (no arguments) ; wakes up the reader from sleep mode */
+
+
 //! @}
 
 
@@ -303,6 +308,8 @@
 #define MFRC630_IRQ0EN_ERR_IRQEN        (1<<1)
 //! If set allow rx SOF irq to propagate to the global IRQ.
 #define MFRC630_IRQ0EN_RXSOF_IRQEN      (1<<0)
+//! If set allow no irq
+#define MFRC630_IRQ0EN_CLEAR			0x00
 
     //! @}
 
@@ -334,6 +341,8 @@
 #define MFRC630_IRQ1EN_TIMER1_IRQEN        (1<<1)
 //! If set allow Timer 0 irq to propagate to the global IRQ.
 #define MFRC630_IRQ1EN_TIMER0_IRQEN        (1<<0)
+//! If set allow no irq
+#define MFRC630_IRQ1EN_CLEAR			0x00
 
     //! @}
 
@@ -442,18 +451,18 @@
 #define MFRC630_PROTO_FELICA_212_MANCHESTER_MANCHESTER 8
 //! Transmitter at 424 kbit/s using Manchester modulation, Receive at 424 kbit/s using Manchester modulation.
 #define MFRC630_PROTO_FELICA_424_MANCHESTER_MANCHESTER 9
-//! ISO15693 1/4 SSC
+//! ISO15693 1/4 SSC (ID2)
 #define MFRC630_PROTO_ISO15693_1_OF_4_SSC 10
-//! ISO15693 1/4 DSC
+//! ISO15693 1/4 DSC (ID2)
 #define MFRC630_PROTO_ISO15693_1_OF_4_DSC 11
-//! ISO15693 1/256 SSC
+//! ISO15693 1/256 SSC (ID2)
 #define MFRC630_PROTO_ISO15693_1_OF_256_SSC 12
 //! EPC/UID Unitray SSC
 #define MFRC630_PROTO_EPC_UID_UNITRAY_SSC 13
 //! ISO18000-3 Mode 3, Tari, ASK, PIE, 2/424
 #define MFRC630_PROTO_ISO18000_MODE_3 14
 
-    //! @}
+//! @}
 
 // recommended register values from register 0x28 down.
 // From AN11022: CLRC663 Quickstart Guide
@@ -472,7 +481,39 @@
 //! Recommended register values for ISO1443A at 848  kbit/s with Miller / BPSK modulation.
 #define MFRC630_RECOM_14443A_ID1_848 {0x8F, 0xDB, 0x11, 0x06, 0x18, 0x18, 0x0F, 0x02, 0x00, 0xC0, 0x12, 0xCF, 0x00, \
                                       0x07, 0x90, 0x3F, 0x12, 0x02}
+//registers for ISO15693 - ID1 - SSC26 - SLI 1/4
+#define MFRC630_RECOM_15693_ID1_SSC26 {0x8F, 0x4F, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+//Recommended register value for ISO15693 - ID1 - SSC52 - SLI 1/4
+#define MFRC630_RECOM_15693_ID1_SSC52 {0x8F, 0x4F, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x03,0x10,0x44,0x12,0x06}
+//Recommended register value for ISO15693 -ID1 - DSC - SLI 1/256
+#define MFRC630_RECOM_15693_ID1_DSC {0x8E, 0x4F, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+//Recommended register value for ISO15693 - ID2 - SSC26 - SLI 1/4
+#define MFRC630_RECOM_15693_ID2_SSC26 {0x8F, 0x10, 0x01, 0x06, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+//Recommended register value for ISO15693 - ID2 - SSC52 - SLI 1/4
+#define MFRC630_RECOM_15693_ID2_SSC52 {0x8F, 0x10, 0x01, 0x06, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x03,0x10,0x44,0x12,0x06}
+//Recommended register value for ISO15693 -ID2 - DSC - SLI 1/256
+#define MFRC630_RECOM_15693_ID2_DSC {0x8E, 0x10, 0x01, 0x06, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+///Recommended register value for ISO15693 - ID3 - SSC26 - SLI 1/4
+#define MFRC630_RECOM_15693_ID3_SSC26 {0x8F, 0x17, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+///Recommended register value for ISO15693 - ID3 - SSC52 - SLI 1/4
+#define MFRC630_RECOM_15693_ID3_SSC52 {0x8F, 0x17, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x03,0x10,0x44,0x12,0x06}
+///Recommended register value for ISO15693 -ID3 - DSC - SLI 1/256
+#define MFRC630_RECOM_15693_ID3_DSC {0x8E, 0x17, 0x01, 0x0A, 0x7B, 0x7B, 0x08, 0x00, 0x00, 0x88, 0xA9, 0x0F, 0x00, \
+									0x02,0x10,0x44,0x12,0x06}
+
+
+
 //! @}
+
+
 
 /*! \addtogroup iso14443a
   @{
@@ -496,6 +537,19 @@
 #define MFRC630_MF_CMD_WRITE                    0xA0  //!< To write a block to a mifare card.
 #define MFRC630_MF_ACK                          0x0A  //!< Sent by cards to acknowledge an operation.
 
+//! @}
+
+/*! \addtogroup iso15693
+  @{
+*/
+// Defines for ISO15693
+#define MFRC630_ISO15693_INVENTORY				0x01 //!< Inventory Command of ISO15693 (like REQA for 14443)
+#define MFRC630_ISO15693_FLAGS					0x36 //!< Flags for the Tag. B00110110. Check page 20 - http://www.ti.com/lit/an/sloa141/sloa141.pdf
+#define MFRC630_ISO15693_BlANK					0x00 //!< Value to fill 4 byte
+#define MFRC630_ISO15693_QUIET					0x02 //!< Makes a tag stay quiet
+
+
+#define MFRC630_ISO15693_UID_LENGTH				0x0A //!< Size of UID (10 btye)
 //! @}
 
 #endif  // MFRC630_DEF_H_

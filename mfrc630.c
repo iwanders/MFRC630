@@ -23,6 +23,7 @@
 */
 
 #include "mfrc630.h"
+#include "Arduino.h"
 
 /** @file */
 
@@ -276,6 +277,24 @@ void mfrc630_AN1102_recommended_registers_skip(uint8_t protocol, uint8_t skip) {
     case MFRC630_PROTO_ISO14443A_848_MILLER_BPSK:
       {
         const uint8_t buf[] = MFRC630_RECOM_14443A_ID1_848;
+        mfrc630_write_regs(MFRC630_REG_DRVMOD+skip, buf+skip, sizeof(buf)-skip);
+      }
+      break;
+    case MFRC630_PROTO_ISO15693_1_OF_4_SSC:
+      {
+    	const uint8_t buf[] = MFRC630_RECOM_15693_ID1_SSC26;
+        mfrc630_ISO15693_init(MFRC630_PROTO_ISO15693_1_OF_4_SSC,buf);
+      }
+      break;
+    case MFRC630_PROTO_ISO15693_1_OF_4_DSC:
+      {
+        const uint8_t buf[] = MFRC630_RECOM_15693_ID1_DSC;
+        mfrc630_write_regs(MFRC630_REG_DRVMOD+skip, buf+skip, sizeof(buf)-skip);
+      }
+      break;
+    case MFRC630_PROTO_ISO15693_1_OF_256_SSC:
+      {
+        const uint8_t buf[] = MFRC630_RECOM_15693_ID1_SSC52;
         mfrc630_write_regs(MFRC630_REG_DRVMOD+skip, buf+skip, sizeof(buf)-skip);
       }
       break;
@@ -931,3 +950,149 @@ void mfrc630_MF_example_dump() {
     MFRC630_PRINTF("No answer to REQA, no cards?\n");
   }
 }
+
+void mfrc630_ISO15693_init(uint8_t protocol, uint8_t buf){
+
+	// Configure Timers
+	mfrc630_write_reg(MFRC630_REG_T0CONTROL,0x98);  		//configure T0
+	mfrc630_write_reg(MFRC630_REG_T1CONTROL,0x92);			//configure T1 and cascade it with T0
+	mfrc630_write_reg(MFRC630_REG_T2CONTROL,0x20);			//Configure T2 for LFO Autotrimm
+	mfrc630_write_reg(MFRC630_REG_T2RELOADHI,0x03);			//T2 reload value for LFO AutoTrimm
+	mfrc630_write_reg(MFRC630_REG_T2RELOADLO,0xFF);			//T2 reload value high
+	mfrc630_write_reg(MFRC630_REG_T3CONTROL,0x00);			//Configure T3 (for LPCD /Autotrimm)
+
+	//Configure FiFo
+	mfrc630_write_reg(MFRC630_REG_FIFOCONTROL,0x90);		//Set Fifo-Size and Waterlevel
+	mfrc630_write_reg(MFRC630_REG_WATERLEVEL,0xFE);			//Set Waterlevel
+
+	//Configure RXBITCTRL
+	mfrc630_write_reg(MFRC630_REG_RXBITCTRL,0x80);			//Set RXBITCTLR register
+
+	//set the Protocol
+	mfrc630_AN1102_recommended_registers(buf);				//Write buffered values
+
+	mfrc630_cmd_idle();								//Cancel any commands
+	mfrc630_flush_fifo();							//Flush Fifo
+	mfrc630_clear_irq0();							//Clear IRQ0
+	mfrc630_clear_irq1();							//Clear IRQ1
+
+	//Set Timers
+	mfrc630_write_reg(MFRC630_REG_T0RELOADHI,0x18);			//T0 Reload Hi
+	mfrc630_write_reg(MFRC630_REG_T0RELOADLO,0x86);			//T0 Reload Lo
+	mfrc630_write_reg(MFRC630_REG_T1RELOADHI,0x00);			//T1 Reload Hi
+	mfrc630_write_reg(MFRC630_REG_T1RELOADLO,0x00);			//T1 Reload Lo
+
+	// Write in FIFO "Load protocol" params(TxProtocol=Iso15693(0a), RxProtocol=Iso15693(0a),
+	mfrc630_write_reg(MFRC630_REG_FIFODATA,protocol);
+	mfrc630_write_reg(MFRC630_REG_FIFODATA,protocol);
+
+	mfrc630_write_reg(MFRC630_REG_IRQ0EN, MFRC630_IRQ0EN_IDLE_IRQEN);	// Enable IRQ0 interrupt source
+	mfrc630_write_reg(MFRC630_REG_IRQ1EN, MFRC630_IRQ1EN_IRQ_PINEN); 	// Enable IRQ1 interrupt source
+	mfrc630_write_reg(MFRC630_REG_COMMAND,MFRC630_CMD_LOADPROTOCOL);	// Execute Rc663 command: "Load protocol"
+
+	mfrc630_write_reg(MFRC630_REG_IRQ0EN, MFRC630_IRQ0EN_CLEAR);		//Disable IRQ
+	mfrc630_write_reg(MFRC630_REG_IRQ1EN, MFRC630_IRQ1EN_CLEAR);		//Disable IRQ
+
+	mfrc630_flush_fifo();									//Flush Fifo
+
+	//> Apply RegisterSet
+	mfrc630_write_reg(MFRC630_REG_TXCRCPRESET,0x7B);
+	mfrc630_write_reg(MFRC630_REG_RXCRCCON,0x7B);
+	mfrc630_write_reg(MFRC630_REG_TXDATANUM,0x08);
+	mfrc630_write_reg(MFRC630_REG_TXMODWIDTH,0x00);
+	mfrc630_write_reg(MFRC630_REG_TXSYM10BURSTLEN,0x00);
+	mfrc630_write_reg(MFRC630_REG_TXWAITCTRL,0x00);
+	mfrc630_write_reg(MFRC630_REG_FRAMECON,0x0F);
+	mfrc630_write_reg(MFRC630_REG_RXCTRL,0x02);
+	mfrc630_write_reg(MFRC630_REG_RXTHRESHOLD,0x4E);
+	mfrc630_write_reg(MFRC630_REG_RXANA,0x04);
+	mfrc630_write_reg(MFRC630_REG_RXWAIT,0x8C);				// Set the RxWait register
+	mfrc630_write_reg(MFRC630_REG_TXWAITCTRL,0xC0);
+	mfrc630_write_reg(MFRC630_REG_TXWAITLO,0x00);
+
+	// Write Timer-0, Timer-1 reload values(high,low)
+	mfrc630_write_reg(MFRC630_REG_T0RELOADHI,0x18);
+	mfrc630_write_reg(MFRC630_REG_T0RELOADLO,0x86);
+	mfrc630_write_reg(MFRC630_REG_T1RELOADHI,0x00);
+	mfrc630_write_reg(MFRC630_REG_T1RELOADLO,0x00);
+	mfrc630_write_reg(MFRC630_REG_TXAMP,0x0A);
+	mfrc630_write_reg(MFRC630_REG_DRVMOD,0x81);
+	mfrc630_write_reg(MFRC630_REG_STATUS,0x00); // Disable MIFARE Crypto1
+	//Set Driver
+}
+
+uint8_t mfrc630_ISO15693_readTag(uint8_t* uid){
+
+	//Set timeout for Timer0/Timer1, set reload values
+	mfrc630_write_reg(MFRC630_REG_T0RELOADHI,0x24);
+	mfrc630_write_reg(MFRC630_REG_T0RELOADLO,0xEB);
+	mfrc630_write_reg(MFRC630_REG_T1RELOADHI,0x00);
+	mfrc630_write_reg(MFRC630_REG_T1RELOADLO,0x00);
+
+	mfrc630_cmd_idle();								//cancel any commands
+	mfrc630_flush_fifo();							//clear the fifo
+	mfrc630_clear_irq0();							//clear irq0
+	mfrc630_clear_irq1();							//clear irq1
+
+	//Prepare instruction to send to fifo
+	uint8_t instruction[4] ={
+			MFRC630_ISO15693_FLAGS,					//set the flags,
+			MFRC630_ISO15693_INVENTORY,				//set "Inventory Command"
+			MFRC630_ISO15693_BlANK,					//set blank
+			MFRC630_ISO15693_BlANK					//set blank
+	};
+
+	//Send instruction to reader
+	mfrc630_write_reg(MFRC630_REG_DRVMOD,0x89); 	//Field on
+	mfrc630_cmd_transceive(instruction,4);
+
+	// clear interrupts
+	mfrc630_clear_irq0();							//clear irq0
+	mfrc630_clear_irq1();							//clear irq1
+
+	// Enable IRQ0,IRQ1 interrupt sources
+	 mfrc630_write_reg(MFRC630_REG_IRQ0EN, MFRC630_IRQ0EN_IDLE_IRQEN  | MFRC630_IRQ0EN_TX_IRQEN);
+	 mfrc630_write_reg(MFRC630_REG_IRQ1EN, MFRC630_IRQ1EN_IRQ_PINEN  | MFRC630_IRQ1EN_TIMER1_IRQEN );
+
+	  // block until transmission ending
+	  uint8_t irq0_value = 0;
+	  uint8_t irq1_value = 0;
+	  uint32_t timeout= millis() ;
+	  while (!((irq0_value & 0x08)== 0x08)) {
+	    irq0_value = mfrc630_irq0();
+	    if(millis()>(timeout+50)){
+	    	break;
+	    }
+	  }
+
+	  //Wait for timer1 underflow (irq1(0x02) or RxIrQ irq0(0x04;
+	  irq0_value =0;
+	  timeout= millis();
+	  while ( ((irq1_value & 0x02) !=0x02)  && ((irq0_value & 0x04) !=0x04)){
+		irq1_value = mfrc630_irq1();
+		irq0_value = mfrc630_irq0();
+	    if(millis()>(timeout+50)){
+		    	break;
+		 }
+	  }
+
+	  //Check for error
+	if((irq1_value & 0x02)){
+		return 0x01;								//return error!
+	};
+
+	//disable IRQ0,IRQ1
+	mfrc630_write_reg(MFRC630_REG_IRQ0EN,MFRC630_IRQ0EN_CLEAR);
+	mfrc630_write_reg(MFRC630_REG_IRQ1EN,MFRC630_IRQ1EN_CLEAR);
+
+	//see if a uid was found:
+	uint16_t fifo_len = mfrc630_fifo_length();
+	if(fifo_len != MFRC630_ISO15693_UID_LENGTH){
+		return 0x02;								//return error - invalid uid size!
+	}
+
+	//transfer UID to variable
+	mfrc630_read_fifo(uid,fifo_len);
+	return 0;										//return state - valid
+}
+
