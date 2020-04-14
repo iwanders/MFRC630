@@ -38,7 +38,7 @@
 
   If all goes well, a ISO15693 Tag/Card will print something like:
 
- 	 Tag was found! UID:00 02 F4 CF 31 1E 66 24 16 E0  ..waiting 1s for next read
+ 	 Tag with valid UID was found! UID: UID:00 02 F4 CF 31 1E 66 24 16 E0  ..waiting 1s for next read
 
 
   Onto the serial port.
@@ -90,18 +90,13 @@ void mfrc630_ISO15693_example_dump_arduino(){
 	uint8_t uid[10]={0};	//variable for 10byte UID
 	uint8_t status = mfrc630_ISO15693_readTag(uid);
 
-	switch (status){
-		case 0:
-			Serial.print("Tag was found! UID: ");
-			print_block(uid,10);
-			Serial.println(" ..waiting 1s for next read");
-			break;
-		case 1:
-			Serial.println("Failure, No Tag found or Reader Problem!");
-			break;
-		case 2:
-			Serial.println("Failure, No Tag found or Reader Problem!");
-			break;
+	if(status==10){
+		Serial.print("Tag with valid UID was found! UID: ");
+		print_block(uid,10);
+		Serial.println(" ..waiting 1s for next read");
+	}
+	else{
+		Serial.println("Failure, No Tag found or Reader Problem!");
 	}
 }
 
@@ -119,7 +114,7 @@ void setup(){
   SPI.begin();
 
   // Set the registers of the MFRC630 into the default.
- mfrc630_AN1102_recommended_registers(MFRC630_PROTO_ISO15693_1_OF_4_SSC);
+  mfrc630_AN1102_recommended_registers(MFRC630_PROTO_ISO15693_1_OF_4_SSC);
 
 }
 

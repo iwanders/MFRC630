@@ -705,14 +705,23 @@ void mfrc630_MF_example_dump();
 /*! \Initializes the reader for iso15693
 
   Set all registers to the desired value for ISO15693 reading
+
+   \param [in] the specified protocol number for ISO15693, there are differnt values for 1/4 SSC or DSC or 1/256 SSC.
+   The right protocol for the desired card standart must be used
+
+   \param [in] the buffer with register values according to the selected protocol, see mfrc630_AN1102_recommended_registers_skip for more information
+
 */
 void mfrc630_ISO15693_init(uint8_t protocol, uint8_t buf);
 
 /*! \Reads ISO15693 tag
 
-  Try to Read ISO15693 tag
+  Try to Read ISO15693 tag. The device will send the command flags and the inventory command and tries to get a response
+
+   \param [out] uid: The UID of the card will be stored into this array.
+   \return length of uid in bytes, returns zero in case of failure. ISO15693 should normally return 10 for 10bytes of uid in Fifo
 */
-uint8_t mfrc630_ISO15693_readTag(uint8_t *uid);
+uint16_t mfrc630_ISO15693_readTag(uint8_t *uid);
 
 //!  @}
 

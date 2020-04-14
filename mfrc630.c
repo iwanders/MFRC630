@@ -1021,7 +1021,7 @@ void mfrc630_ISO15693_init(uint8_t protocol, uint8_t buf){
 	//Set Driver
 }
 
-uint8_t mfrc630_ISO15693_readTag(uint8_t* uid){
+uint16_t mfrc630_ISO15693_readTag(uint8_t* uid){
 
 	//Set timeout for Timer0/Timer1, set reload values
 	mfrc630_write_reg(MFRC630_REG_T0RELOADHI,0x24);
@@ -1078,7 +1078,7 @@ uint8_t mfrc630_ISO15693_readTag(uint8_t* uid){
 
 	  //Check for error
 	if((irq1_value & 0x02)){
-		return 0x01;								//return error!
+		return 0x00;								//return error!
 	};
 
 	//disable IRQ0,IRQ1
@@ -1088,11 +1088,11 @@ uint8_t mfrc630_ISO15693_readTag(uint8_t* uid){
 	//see if a uid was found:
 	uint16_t fifo_len = mfrc630_fifo_length();
 	if(fifo_len != MFRC630_ISO15693_UID_LENGTH){
-		return 0x02;								//return error - invalid uid size!
+		return 0x00;								//return error - invalid uid size!
 	}
 
 	//transfer UID to variable
 	mfrc630_read_fifo(uid,fifo_len);
-	return 0;										//return state - valid
+	return fifo_len;								//return state - valid
 }
 
