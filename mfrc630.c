@@ -196,11 +196,11 @@ void mfrc630_timer_set_control(uint8_t timer, uint8_t value) {
 }
 void mfrc630_timer_set_reload(uint8_t timer, uint16_t value) {
   mfrc630_write_reg(MFRC630_REG_T0RELOADHI + (5 * timer), value >> 8);
-  mfrc630_write_reg(MFRC630_REG_T0RELOADLO + (5 * timer), 0xFF);
+  mfrc630_write_reg(MFRC630_REG_T0RELOADLO + (5 * timer), value & 0xFF);
 }
 void mfrc630_timer_set_value(uint8_t timer, uint16_t value) {
   mfrc630_write_reg(MFRC630_REG_T0COUNTERVALHI + (5 * timer), value >> 8);
-  mfrc630_write_reg(MFRC630_REG_T0COUNTERVALLO + (5 * timer), 0xFF);
+  mfrc630_write_reg(MFRC630_REG_T0COUNTERVALLO + (5 * timer), value & 0xFF);
 }
 uint16_t mfrc630_timer_get_value(uint8_t timer) {
   uint16_t res = mfrc630_read_reg(MFRC630_REG_T0COUNTERVALHI + (5 * timer)) << 8;
@@ -661,6 +661,7 @@ uint8_t mfrc630_iso14443a_select(uint8_t* uid, uint8_t* sak) {
         uid[(cascade_level-1)*3 + UIDn] = uid_this_level[UIDn];
       }
 
+      *sak = sak_value;
       // Finally, return the length of the UID that's now at the uid pointer.
       return cascade_level*3 + 1;
     }
